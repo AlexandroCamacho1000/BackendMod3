@@ -1,60 +1,29 @@
 import { Router } from "express";
-// import NoteMySQLRepository from "../../infraestructure/database/mysql/note.mysql.repository.js";
-import NoteMongoRepository from "../../infraestructure/database/mongo/note.mongo.repository.js";
-import NoteEntity from "../../domain/entities/note.entity.js";
+import NoteController from "../controllers/note.controller.js";
+import NoteService from "../../application/use-cases/note.service.js";
+import upload from "../middlewares/upload.middleware.js";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { roleMiddleware } from "../middlewares/role.middleware.js";
 
-// const mysqlRepo = new NoteMySQLRepository();
-const mongoRepo = new NoteMongoRepository();
+// Importamos el repositorio de MongoDB (en lugar de MySQL)
+import NoteMongoRepository from "../../infrastructure/database/mongo/note.mongo.repository.js";
+// Si tienes MailService, impórtalo (opcional)
+// import MailService from "../../infrastructure/services/mail.service.js";
+
+// Inyección de dependencias
+// const mailService = new MailService();
+const noteRepository = new NoteMongoRepository();
+const noteService = new NoteService(noteRepository); // Agrega mailService si lo tienes
+const noteController = new NoteController(noteService);
 
 const router = Router();
 
-router.post("/", async (req, res) => {
-    const noteEntity = new NoteEntity(req.body);
-    // const [savedNote] = await Promise.all([
-    //     mysqlRepo.save(noteEntity),
-    //     mongoRepo.save(noteEntity)
-    // ]);
-    const savedNote = await mongoRepo.save(noteEntity);
-    res.status(201).json(savedNote);
-});
-
-router.get("/user/:userId", async (req, res) => {
-    // const notes = await mysqlRepo.findByUserId(req.params.userId);
-    const notes = await mongoRepo.findByUserId(req.params.userId);
-    res.json(notes);
-});
-
-router.get("/:id", async (req, res) => {
-    // const note = await mysqlRepo.getById(req.params.id);
-    const note = await mongoRepo.getById(req.params.id);
-    if (!note) {
-        return res.status(404).json({ error: 'Nota no encontrada' });
-    }
-    res.json(note);
-});
-
-router.put("/:id", async (req, res) => {
-    // const [updatedNote] = await Promise.all([
-    //     mysqlRepo.update(req.params.id, req.body),
-    //     mongoRepo.update(req.params.id, req.body)
-    // ]);
-    const updatedNote = await mongoRepo.update(req.params.id, req.body);
-    if (!updatedNote) {
-        return res.status(404).json({ error: 'Nota no encontrada' });
-    }
-    res.json(updatedNote);
-});
-
-router.delete("/:id", async (req, res) => {
-    // const [deleted] = await Promise.all([
-    //     mysqlRepo.delete(req.params.id),
-    //     mongoRepo.delete(req.params.id)
-    // ]);
-    const deleted = await mongoRepo.delete(req.params.id);
-    if (!deleted) {
-        return res.status(404).json({ error: 'Nota no encontrada' });
-    }
-    res.status(204).send();
-});
+// Definir las rutas para las notas  
+router.post("/", authMiddleware, upload.single('image'), noteController.createNote);
+router.get("/", authMiddleware, noteController.getNotesByUserId);
+router.get("/:id", noteController.getNoteById);
+router.put("/:id", authMiddleware, upload.single('image'), noteController.updateNote);
+router.delete("/:id", authMiddleware, roleMiddleware(["admin"]), noteController.deleteNote);
+// router.post("/:id/share", authMiddleware, noteController.shareNote); // Opcional
 
 export default router;

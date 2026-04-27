@@ -1,4 +1,4 @@
-import NoteModel from "./note.models.js";
+import NoteModel from "./note.model.js";
 
 export default class NoteMongoRepository { 
     async save(noteEntity) {
@@ -39,4 +39,10 @@ export default class NoteMongoRepository {
         if (!note) return false;
         return true;
     }
+
+    async getUserIdByNoteId(id) {
+    const note = await NoteModel.findById(id);
+    if (!note) return null;
+    return note.userId;
+}
 }
