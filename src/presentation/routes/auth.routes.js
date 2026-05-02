@@ -12,8 +12,11 @@ const authController = new AuthController({ authService });
 
 const router = Router();
 
-// Solo los administradores pueden registrar nuevos usuarios
-router.post("/register", authMiddleware, authController.register);
+// Registro y login son públicos (sin autenticación)
+router.post("/register", authController.register);
 router.post("/login", authController.login);
+
+// Solo administradores pueden registrar nuevos usuarios (protegido)
+// router.post("/register", authMiddleware, roleMiddleware(["admin"]), authController.register);
 
 export default router;

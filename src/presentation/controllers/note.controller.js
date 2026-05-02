@@ -4,10 +4,15 @@ export default class NoteController {
     }
 
     createNote = async (req, res) => {
-        const data = req.body;
-        if (req.file) data.imageUrl = '/uploads/' + req.file.filename;
-        data.userId = req.user.id;
         try {
+            const data = {
+                title: req.body.title,
+                content: req.body.content,
+                imageUrl: req.file ? `/uploads/${req.file.filename}` : null,
+                isPrivate: req.body.isPrivate === 'true',
+                password: req.body.password || null,
+                userId: req.user.id
+            };
             const note = await this.noteService.createNote(data);
             res.status(201).json(note);
         } catch (error) {
@@ -16,9 +21,8 @@ export default class NoteController {
     }
 
     getNotesByUserId = async (req, res) => {
-        const userId = req.user.id;
         try {
-            const notes = await this.noteService.getNotesByUserId(userId);
+            const notes = await this.noteService.getNotesByUserId(req.user.id);
             res.status(200).json(notes);
         } catch (error) {
             res.status(404).json({ error: error.message });
@@ -37,33 +41,18 @@ export default class NoteController {
         }
     }
 
-    // ========== VERSIÓN ANTERIOR (SIN VALIDACIÓN) ==========
-    /*
-    updateNote = async (req, res) => {
-        try {
-            const updatedNote = await this.noteService.update(req.params.id, req.body);
-            res.status(200).json(updatedNote);
-        } catch (error) {
-            res.status(400).json({ error: error.message });
-        }
-    }
-
-    deleteNote = async (req, res) => {
-        try {
-            await this.noteService.delete(req.params.id);
-            res.status(204).send();
-        } catch (error) {
-            res.status(400).json({ error: error.message });
-        }
-    }
-    */
-    // =======================================================
-
-    // ========== NUEVA VERSIÓN (CON VALIDACIÓN DE USUARIO) ==========
     updateNote = async (req, res) => {
         try {
             const userIdFromToken = req.user.id;
-            const updatedNote = await this.noteService.update(req.params.id, req.body, userIdFromToken);
+            const userRole = req.user.role;
+            const updateData = {
+                title: req.body.title,
+                content: req.body.content,
+                imageUrl: req.file ? `/uploads/${req.file.filename}` : undefined,
+                isPrivate: req.body.isPrivate === 'true',
+                password: req.body.password || null
+            };
+            const updatedNote = await this.noteService.update(req.params.id, updateData, userIdFromToken, userRole);
             res.status(200).json(updatedNote);
         } catch (error) {
             if (error.message === "No tienes permiso para actualizar esta nota") {
@@ -77,7 +66,8 @@ export default class NoteController {
     deleteNote = async (req, res) => {
         try {
             const userIdFromToken = req.user.id;
-            await this.noteService.delete(req.params.id, userIdFromToken);
+            const userRole = req.user.role;
+            await this.noteService.delete(req.params.id, userIdFromToken, userRole);
             res.status(204).send();
         } catch (error) {
             if (error.message === "No tienes permiso para eliminar esta nota") {
@@ -87,5 +77,33 @@ export default class NoteController {
             }
         }
     }
-    // =================================================================
+
+    
+    shareNote = async (req, res) => {
+        try {
+            const userIdFromToken = req.user.id;
+            const userRole = req.user.role;
+            const { email } = req.body;
+            
+            if (!email) {
+                return res.status(400).json({ error: "El email del destinatario es requerido" });
+            }
+            
+            const result = await this.noteService.shareNoteByEmail(
+                req.params.id, 
+                email, 
+                userIdFromToken, 
+                userRole
+            );
+            res.status(200).json(result);
+        } catch (error) {
+            if (error.message === "No tienes permiso para compartir esta nota") {
+                res.status(403).json({ error: error.message });
+            } else if (error.message === "Nota no encontrada") {
+                res.status(404).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
+        }
+    }
 }

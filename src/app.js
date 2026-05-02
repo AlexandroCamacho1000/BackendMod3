@@ -7,10 +7,8 @@ import { loggerMiddleware } from './presentation/middlewares/logger.middleware.j
 import noteRoutes from './presentation/routes/note.routes.js';
 import authRoutes from './presentation/routes/auth.routes.js';
 import { connectMongo } from './infrastructure/database/mongo/connection.js';
-// import { connectMysql } from './infraestructure/database/mysql/connection.js';
 
 await connectMongo();
-// await connectMysql();
 
 const app = express();
 
