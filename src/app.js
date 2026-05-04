@@ -7,10 +7,13 @@ import { loggerMiddleware } from './presentation/middlewares/logger.middleware.j
 import noteRoutes from './presentation/routes/note.routes.js';
 import authRoutes from './presentation/routes/auth.routes.js';
 import { connectMongo } from './infrastructure/database/mongo/connection.js';
+import { setupSwagger } from './infrastructure/config/swagger.config.js';
 
 await connectMongo();
 
 const app = express();
+
+setupSwagger(app);
 
 app.use(morgan('dev'));
 app.use(cors());
@@ -19,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(loggerMiddleware);
 
 app.use('/uploads', express.static('uploads'));
+
 app.use('/api/v1/notes', noteRoutes);
 app.use('/api/auth', authRoutes);
 
@@ -35,3 +39,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
+
+export default app;
