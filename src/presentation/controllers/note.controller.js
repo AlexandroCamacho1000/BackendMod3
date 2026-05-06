@@ -9,9 +9,10 @@ export default class NoteController {
                 title: req.body.title,
                 content: req.body.content,
                 imageUrl: req.file ? `/uploads/${req.file.filename}` : null,
-                isPrivate: req.body.isPrivate === 'true',
+                isPrivate: req.body.isPrivate === true,
                 password: req.body.password || null,
-                userId: req.user.id
+                userId: req.user.id,
+                categoryId: req.body.categoryId || null
             };
             const note = await this.noteService.createNote(data);
             res.status(201).json(note);
@@ -49,8 +50,9 @@ export default class NoteController {
                 title: req.body.title,
                 content: req.body.content,
                 imageUrl: req.file ? `/uploads/${req.file.filename}` : undefined,
-                isPrivate: req.body.isPrivate === 'true',
-                password: req.body.password || null
+                isPrivate: req.body.isPrivate === true,
+                password: req.body.password || null,
+                categoryId: req.body.categoryId !== undefined ? req.body.categoryId : null
             };
             const updatedNote = await this.noteService.update(req.params.id, updateData, userIdFromToken, userRole);
             res.status(200).json(updatedNote);
@@ -78,7 +80,6 @@ export default class NoteController {
         }
     }
 
-    
     shareNote = async (req, res) => {
         try {
             const userIdFromToken = req.user.id;
@@ -101,6 +102,22 @@ export default class NoteController {
                 res.status(403).json({ error: error.message });
             } else if (error.message === "Nota no encontrada") {
                 res.status(404).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
+        }
+    }
+
+    // ✅ EJERCICIO 3 - Obtener nota pública (sin JWT)
+    getPublicNoteById = async (req, res) => {
+        try {
+            const note = await this.noteService.getPublicNoteById(req.params.id);
+            res.status(200).json(note);
+        } catch (error) {
+            if (error.message === "Nota no encontrada") {
+                res.status(404).json({ error: error.message });
+            } else if (error.message === "Acceso denegado: Esta nota es privada") {
+                res.status(403).json({ error: error.message });
             } else {
                 res.status(500).json({ error: error.message });
             }

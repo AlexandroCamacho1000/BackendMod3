@@ -1,12 +1,3 @@
-import { Router } from "express";
-import multer from 'multer';
-import NoteController from "../controllers/note.controller.js";
-import NoteService from "../../application/use-cases/note.service.js";
-import MailService from "../../infrastructure/services/mail.service.js";
-import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { roleMiddleware } from "../middlewares/role.middleware.js";
-import NoteMongoRepository from "../../infrastructure/database/mongo/note.mongo.repository.js";
-
 /**
  * @swagger
  * tags:
@@ -150,7 +141,34 @@ import NoteMongoRepository from "../../infrastructure/database/mongo/note.mongo.
  *         description: No autorizado
  *       404:
  *         description: Nota no encontrada
+ * 
+ * /notes/{id}/public:
+ *   get:
+ *     summary: Obtener nota pública (sin autenticación)
+ *     tags: [Notas]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Nota pública encontrada
+ *       403:
+ *         description: Acceso denegado - nota privada
+ *       404:
+ *         description: Nota no encontrada
  */
+
+import { Router } from "express";
+import multer from 'multer';
+import NoteController from "../controllers/note.controller.js";
+import NoteService from "../../application/use-cases/note.service.js";
+import MailService from "../../infrastructure/services/mail.service.js";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { roleMiddleware } from "../middlewares/role.middleware.js";
+import NoteMongoRepository from "../../infrastructure/database/mongo/note.mongo.repository.js";
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -169,11 +187,17 @@ const noteController = new NoteController(noteService);
 
 const router = Router();
 
-router.post("/", authMiddleware, upload.single('image'), noteController.createNote);
-router.get("/", authMiddleware, noteController.getNotesByUserId);
+// Ruta pública (NO requiere autenticación)
+router.get("/:id/public", noteController.getPublicNoteById);
+
+// Rutas protegidas (requieren autenticación)
+router.use(authMiddleware);
+
+router.post("/", upload.single('image'), noteController.createNote);
+router.get("/", noteController.getNotesByUserId);
 router.get("/:id", noteController.getNoteById);
-router.put("/:id", authMiddleware, upload.single('image'), noteController.updateNote);
-router.delete("/:id", authMiddleware, roleMiddleware(["admin"]), noteController.deleteNote);
-router.post("/:id/share", authMiddleware, noteController.shareNote);  
+router.put("/:id", upload.single('image'), noteController.updateNote);
+router.delete("/:id", roleMiddleware(["admin"]), noteController.deleteNote);
+router.post("/:id/share", noteController.shareNote);  
 
 export default router;

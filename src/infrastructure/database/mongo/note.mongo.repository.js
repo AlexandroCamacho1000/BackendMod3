@@ -8,7 +8,8 @@ export default class NoteMongoRepository {
             imageUrl: noteEntity.imageUrl,
             isPrivate: noteEntity.isPrivate,
             password: noteEntity.password,
-            userId: noteEntity.userId
+            userId: noteEntity.userId,
+            categoryId: noteEntity.categoryId  // ✅ EJERCICIO 2 - AGREGAR
         });
         const savedNote = await note.save();
         return savedNote.toObject();
@@ -41,8 +42,8 @@ export default class NoteMongoRepository {
     }
 
     async getUserIdByNoteId(id) {
-    const note = await NoteModel.findById(id);
-    if (!note) return null;
-    return note.userId;
-}
+        const note = await NoteModel.findById(id);
+        if (!note) return null;
+        return note.userId;
+    }
 }

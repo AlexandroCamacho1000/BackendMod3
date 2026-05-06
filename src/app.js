@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import { loggerMiddleware } from './presentation/middlewares/logger.middleware.js';
 import noteRoutes from './presentation/routes/note.routes.js';
 import authRoutes from './presentation/routes/auth.routes.js';
+import categoryRoutes from './presentation/routes/category.routes.js';
 import { connectMongo } from './infrastructure/database/mongo/connection.js';
 import { setupSwagger } from './infrastructure/config/swagger.config.js';
 
@@ -25,6 +26,8 @@ app.use('/uploads', express.static('uploads'));
 
 app.use('/api/v1/notes', noteRoutes);
 app.use('/api/auth', authRoutes);
+
+app.use('/api/v1/categories', categoryRoutes);
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'API de notas activa' });

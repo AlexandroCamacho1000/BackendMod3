@@ -10,10 +10,22 @@ export default class NoteService {
         if (!data.title || !data.content) { 
             throw new Error("Title and content are required"); 
         }
-        const note = new NoteEntity(data);
+        
+        // ✅ EJERCICIO 2 - Asegurar que categoryId se pase correctamente
+        const noteData = {
+            title: data.title,
+            content: data.content,
+            userId: data.userId,
+            categoryId: data.categoryId || null,  // ← CLAVE
+            imageUrl: data.imageUrl || null,
+            isPrivate: data.isPrivate || false
+        };
+        
+        const note = new NoteEntity(noteData);
         return await this.noteRepository.save(note);
     }
 
+    // El resto de métodos quedan igual...
     async getNotesByUserId(userId) {
         return await this.noteRepository.findByUserId(userId);
     }
@@ -61,4 +73,17 @@ export default class NoteService {
         await this.mailService.sendNoteEmail(targetEmail, note);
         return { message: "Nota compartida exitosamente por email" };
     }
+
+ // ✅ EJERCICIO 3 - Obtener nota pública (sin autenticación)
+    async getPublicNoteById(id) {
+        const note = await this.noteRepository.getById(id);
+        if (!note) {
+            throw new Error("Nota no encontrada");
+        }
+        if (note.isPrivate === true) {
+            throw new Error("Acceso denegado: Esta nota es privada");
+        }
+        return note;
+    }
+
 }
